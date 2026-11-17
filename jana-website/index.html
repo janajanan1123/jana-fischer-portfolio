@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jana Fischer – Visual Artist</title>
+<link href="css/fonts.css" rel="stylesheet">
+<style>
+:root{--bg:#050505;--fg:#f2f0eb;--muted:#9a978f;--pad:clamp(20px,4.3vw,64px)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--fg);font-family:Archivo,system-ui,sans-serif;font-stretch:110%;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.loading{overflow:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.wide{font-family:Archivo,sans-serif;font-stretch:125%;font-weight:700;text-transform:uppercase;letter-spacing:-.01em}
+.char{display:inline-block;will-change:transform}
+.line-mask{display:block;overflow:hidden;padding-bottom:.04em}
+
+/* grain */
+.grain{position:fixed;inset:-50%;z-index:90;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 1s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+
+/* preloader */
+.loader{position:fixed;inset:0;z-index:100;background:#050505;display:flex;flex-direction:column;justify-content:space-between;padding:var(--pad);clip-path:circle(150% at 50% 50%)}
+.loader-top,.loader-bottom{display:flex;justify-content:space-between;align-items:flex-end;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#9a978f;position:relative}
+.loader-name{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(48px,11vw,170px);line-height:1;color:var(--fg);white-space:nowrap;pointer-events:none}
+.loader-disc{display:flex;gap:10px;align-items:baseline}
+.loader-disc b{font-weight:600;color:var(--fg);min-width:14ch}
+.loader-count{font-family:Archivo,sans-serif;font-stretch:125%;font-weight:700;font-size:clamp(40px,6vw,88px);line-height:.8;color:var(--fg);letter-spacing:-.02em}
+.loader-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--fg);transform-origin:left;transform:scaleX(0)}
+/* nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:30px var(--pad);mix-blend-mode:difference;font-size:15px;font-weight:500}
+.nav button{background:none;border:0;color:inherit;font:inherit;cursor:pointer;min-height:44px;padding:0 4px}
+
+/* info overlay */
+.info{position:fixed;inset:0;z-index:60;background:#f2f0eb;color:#050505;padding:110px var(--pad) var(--pad);display:flex;flex-direction:column;justify-content:space-between;clip-path:inset(0 0 100% 0);transition:clip-path .9s cubic-bezier(.77,0,.18,1)}
+.info.open{clip-path:inset(0 0 0 0)}
+.info-close{position:absolute;top:30px;right:var(--pad);background:none;border:0;font:inherit;font-size:15px;font-weight:500;cursor:pointer;min-height:44px}
+.info-links{display:flex;flex-direction:column;gap:4px}
+.info-links a{font-size:clamp(44px,8vw,120px);line-height:1;transition:transform .4s,color .3s;display:inline-block}
+.info-links a:hover{transform:translateX(24px);color:#b0160a}
+.info-bio{max-width:520px;font-size:17px;line-height:1.55;font-stretch:100%}
+
+/* hero */
+.hero{position:relative;height:100vh;min-height:620px;overflow:hidden}
+.hero-img{position:absolute;inset:0;left:28%}
+.hero-img canvas,.hero-img .slide{position:absolute;inset:0;width:100%;height:100%}
+.hero-img .slide{object-fit:cover;opacity:0;transition:opacity 1s}
+.hero-img .slide.on{opacity:1}
+.hero-img.gl .slide{display:none}
+.t-head,.t-giant{transition:none}
+.likes-list button{display:block;background:none;border:0;padding:0;color:#c9c5bc;font:inherit;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;text-align:left;line-height:1.25;min-height:22px}
+.likes-list button:hover,.likes-list button:focus-visible{color:#fff;text-decoration:underline;text-underline-offset:3px;outline:none}
+.likes-list button span{display:block}
+.giant{pointer-events:none}
+.hero-img::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,var(--bg) 0%,rgba(5,5,5,.6) 18%,rgba(5,5,5,0) 40%)}
+.hero-head{position:absolute;left:var(--pad);top:16vh;z-index:3;font-size:clamp(40px,6.9vw,100px);line-height:.86}
+.hero-rule{position:absolute;left:var(--pad);top:calc(16vh + clamp(40px,6.9vw,100px)*1.9);height:34vh;width:1px;background:var(--fg);transform-origin:top;z-index:3}
+.hero-likes{position:absolute;left:var(--pad);bottom:calc(var(--giant-ink,30vh) + 3.5vh);z-index:3;display:flex;align-items:flex-end;gap:16px}
+.hero-likes h2{font-size:clamp(40px,6.9vw,100px);line-height:.86;font-weight:700}
+.likes-list{list-style:none;font-size:13px;font-weight:700;line-height:1.25;letter-spacing:.04em;color:#c9c5bc;padding-bottom:6px}
+.likes-list li{overflow:hidden}.likes-list span{display:block}
+.giant{position:absolute;left:0;right:0;bottom:var(--giant-off,0px);z-index:3;white-space:nowrap;line-height:.8;text-align:center;font-size:var(--giant)}
+.scroll-hint{position:absolute;right:var(--pad);bottom:28px;z-index:4;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#c9c5bc}
+
+/* projects */
+.project{position:relative}
+.p-bg{position:sticky;top:0;height:100vh;margin-bottom:-100vh;overflow:hidden;z-index:0}
+.p-bg img,.p-bg .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.p-bg::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 40%,transparent 40%,rgba(0,0,0,.55))}
+.p-title-wrap{position:sticky;top:0;height:100vh;margin-bottom:-100vh;z-index:3;pointer-events:none;mix-blend-mode:difference;display:flex;align-items:center;padding:0 var(--pad)}
+.p-title{font-size:clamp(56px,9.5vw,150px);line-height:1;white-space:nowrap}
+.p-content{position:relative;z-index:2;padding:95vh var(--pad) 40vh;display:flex;flex-direction:column;align-items:center;gap:22vh}
+.card{width:min(70vw,880px);position:relative;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+.card img,.card .ph{width:100%;aspect-ratio:var(--ar,3/2);object-fit:cover;display:block}
+.card.small{order:2;width:min(34vw,380px);align-self:flex-end;margin-right:-2vw}
+.card.small.left{align-self:flex-start;margin-left:-2vw;margin-right:0}
+.meta{order:1;width:min(70vw,880px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;font-size:13px;line-height:1.5;margin-top:-20vh;padding-top:16px;border-top:1px solid rgba(242,240,235,.35)}
+.meta dt{color:rgba(242,240,235,.62);text-transform:uppercase;letter-spacing:.12em;font-size:11px;margin-bottom:4px}
+.meta dd{font-weight:600}
+.ph{position:relative}
+.ph-label{position:absolute;left:16px;bottom:14px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.frame-marks{position:absolute;inset:0;pointer-events:none;border:1px solid rgba(255,255,255,.18);margin:14px}
+
+.gallery{order:0;width:100%;max-width:1400px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:2.5vw;row-gap:12vh}
+.gallery figure{position:relative;align-self:start;box-shadow:0 40px 120px rgba(0,0,0,.55)}
+.gallery img{width:100%;height:auto;display:block}
+.gallery figcaption{position:absolute;left:0;bottom:-26px;font-size:11px;letter-spacing:.18em;color:rgba(242,240,235,.7)}
+@media (max-width:760px){.gallery{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:8vh}.gallery figure{grid-column:auto!important;margin-top:0!important}.gallery figure:nth-child(even){margin-top:10vh!important}}
+
+.browser{height:22px;background:#e9e6df;display:flex;align-items:center;gap:6px;padding:0 10px}.browser span{width:8px;height:8px;border-radius:50%;background:#b9b4aa}
+.p-title-wrap.noblend{mix-blend-mode:normal}.noblend .p-title{text-shadow:0 2px 40px rgba(0,0,0,.7)}
+.profile{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;padding-bottom:64px;border-bottom:1px solid #222}
+.profile h3{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;color:var(--muted)}
+.profile-text{font-size:clamp(22px,2.4vw,34px);line-height:1.3;font-stretch:100%;font-weight:400;max-width:30ch}
+.profile dl{display:flex;flex-direction:column;gap:18px}
+.profile dt{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.profile dd{font-size:17px;font-weight:600;font-stretch:100%}
+.profile dd a{border-bottom:1px solid currentColor}
+.profile ul{list-style:none;font-size:17px;font-weight:600;line-height:1.7;font-stretch:100%}
+@media (max-width:760px){.profile{grid-template-columns:1fr}}
+/* colophon */
+.colophon{position:relative;z-index:4;background:var(--bg);padding:22vh var(--pad) 40px;display:flex;flex-direction:column;gap:80px}
+.colophon h2{font-size:clamp(56px,9.5vw,150px);line-height:.9}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px}
+.cols h3{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
+.cols p,.cols li{font-size:15px;line-height:1.7;color:#c9c5bc;list-style:none;font-stretch:100%}
+.contact{font-size:clamp(28px,4.4vw,64px);line-height:1.05}
+.contact a{border-bottom:2px solid currentColor}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font-size:13px;color:var(--muted);padding-top:24px;border-top:1px solid #222}
+
+@media (max-width:760px){
+  .hero-img{left:0}.hero-img::before{background:linear-gradient(0deg,var(--bg) 10%,rgba(5,5,5,.2) 60%,rgba(5,5,5,.7) 100%)}
+  .hero-rule{display:none}
+  .card{width:88vw}.card.small{width:58vw}.meta{width:88vw;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .p-title{font-size:13vw}
+}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
+</style>
+</head>
+<body class="loading">
+
+<div class="grain" aria-hidden="true"></div>
+
+<div class="loader" aria-hidden="true">
+  <div class="loader-top"><span>Portfolio</span><span>2026</span></div>
+  <div class="loader-name" id="loaderName">Jana Fischer</div>
+  <div class="loader-bottom">
+    <span class="loader-disc">Loading <b id="loaderDisc">Photography</b></span>
+    <span class="loader-count"><span id="count">0</span></span>
+  </div>
+  <div class="loader-bar" id="loaderBar"></div>
+</div>
+
+<header class="nav">
+  <a href="#top" class="wide" style="font-size:15px;text-transform:none;font-weight:600">Jana Fischer</a>
+  <button type="button" id="infoOpen" aria-expanded="false" aria-controls="info">Info</button>
+</header>
+
+<div class="info" id="info" role="dialog" aria-label="Info" aria-hidden="true">
+  <button type="button" class="info-close" id="infoClose">Close</button>
+  <nav class="info-links wide" aria-label="Contact">
+    <a href="mailto:Jana.fischr2001@gmail.com">Email</a>
+    <a href="tel:+4915208749627">Phone</a>
+    <a href="#contact">Profil</a>
+  </nav>
+  <p class="info-bio">Jana Fischer is a photographer and visual communication student. She works with film, ink, sand and code: analogue prints, life drawings, photobooks and websites.</p>
+</div>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-img" id="heroImg" role="img" aria-label="Portrait of Jana Fischer">
+      <img class="slide on" src="img/jana-3.jpg" alt="">
+      <img class="slide" src="img/jana-2.jpg" alt="">
+      <img class="slide" src="img/jana-1.jpg" alt="">
+      <img class="slide" src="img/jana-4.jpg" alt="">
+    </div>
+    <h1 class="hero-head t-head">
+      <span class="line-mask"><span class="split">Jana Fischer</span></span>
+      <span class="line-mask"><span class="split">is a Visual Artist</span></span>
+    </h1>
+    <div class="hero-rule" aria-hidden="true"></div>
+    <div class="hero-likes">
+      <h2 class="t-head"><span class="line-mask"><span class="split">Who</span></span><span class="line-mask"><span class="split">Likes</span></span></h2>
+      <ul class="likes-list wide" id="likes" aria-label="Choose what Jana likes"></ul>
+    </div>
+    <p class="giant t-giant" aria-live="polite"><span id="giant"></span></p>
+    <span class="scroll-hint">Scroll</span>
+  </section>
+
+  <!-- PROJECTS -->
+  <section class="project">
+    <div class="p-bg"><img src="img/nuit-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Bebas Neue',sans-serif;color:#ffe14d">La Nuit</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">La Nuit – poster and painting for a midnight café</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/6;margin-top:0" data-speed="-6"><img src="img/nuit-licht.jpg" alt="Poster: La Nuit, das Mitternachtscafé für nächtliche Energien, with a glowing lamp" width="1061" height="1500" loading="lazy"><figcaption>01 / 02 — Licht an</figcaption></figure>
+        <figure style="grid-column:7/11;margin-top:16vh" data-speed="-18"><img src="img/nuit-cafe.jpg" alt="Painting of a night café terrace with the words Nous sommes la nuit" width="1061" height="1500" loading="lazy"><figcaption>02 / 02 — Nous sommes la nuit</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Poster &amp; painting</dd></div><div><dt>Concept</dt><dd>Das Mitternachtscafé für nächtliche Energien</dd></div><div><dt>Painting after</dt><dd>Willem Haenraets, „Terrace“</dd></div><div><dt>Year</dt><dd>2025</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/analog-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap noblend" aria-hidden="true"><p class="p-title split" style="font-family:'Special Elite',monospace;color:#ffffff">Analog</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Analog – analogue black and white photography</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/analog-2.jpg" alt="Black and white print of a building corner" width="1600" height="1169" loading="lazy"><figcaption>01 / 04</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:22vh" data-speed="-18"><img src="img/analog-1.jpg" alt="Black and white print of an ornate garden swing" width="938" height="1328" loading="lazy"><figcaption>02 / 04</figcaption></figure>
+        <figure style="grid-column:1/5;margin-top:0" data-speed="-12"><img src="img/analog-3.jpg" alt="Scan of two analogue prints: station roof and facade" width="1161" height="1600" loading="lazy"><figcaption>03 / 04</figcaption></figure>
+        <figure style="grid-column:6/11;margin-top:-6vh" data-speed="-4"><img src="img/analog-4.jpg" alt="Scan of three analogue prints including a tennis player" width="1161" height="1600" loading="lazy"><figcaption>04 / 04</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Analogue photography</dd></div><div><dt>Format</dt><dd>Black &amp; white film</dd></div><div><dt>Output</dt><dd>Prints &amp; scans</dd></div><div><dt>Year</dt><dd>2026</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/akt-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Permanent Marker',cursive;color:#5fe0cf">Aktzeichnen</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Aktzeichnen – life drawing series</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/akt-1.jpg" alt="Ink life drawing of a figure on pink paper" width="688" height="688" loading="lazy"><figcaption>01 / 06</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:22vh" data-speed="-18"><img src="img/akt-2.jpg" alt="Seated figure seen from behind, ink on pink paper" width="669" height="668" loading="lazy"><figcaption>02 / 06</figcaption></figure>
+        <figure style="grid-column:1/5;margin-top:0" data-speed="-12"><img src="img/akt-3.jpg" alt="Torso, ink on turquoise paper" width="663" height="663" loading="lazy"><figcaption>03 / 06</figcaption></figure>
+        <figure style="grid-column:6/11;margin-top:-6vh" data-speed="-4"><img src="img/akt-4.jpg" alt="Seated figure in profile, ink on turquoise paper" width="627" height="627" loading="lazy"><figcaption>04 / 06</figcaption></figure>
+        <figure style="grid-column:2/6;margin-top:4vh" data-speed="-16"><img src="img/akt-5.jpg" alt="Crouching figure, ink on pink paper" width="638" height="639" loading="lazy"><figcaption>05 / 06</figcaption></figure>
+        <figure style="grid-column:7/13;margin-top:-14vh" data-speed="-8"><img src="img/akt-6.jpg" alt="Torso with crossed arms, ink on turquoise paper" width="698" height="698" loading="lazy"><figcaption>06 / 06</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Life drawing</dd></div><div><dt>Medium</dt><dd>Ink on coloured paper</dd></div><div><dt>Series</dt><dd>6 works</dd></div><div><dt>Year</dt><dd>[YEAR]</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/sand-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:Syne,sans-serif;font-weight:800;color:#ffcf7a">Spuren</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Spuren – sand photography and photobook</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/book-sand.jpg" alt="Cover of the photobook with the word SAND" width="884" height="896" loading="lazy"><figcaption>01 / 13</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:22vh" data-speed="-18"><img src="img/sand-1.jpg" alt="Concentric circles drawn in sand" width="1063" height="1063" loading="lazy"><figcaption>02 / 13</figcaption></figure>
+        <figure style="grid-column:1/5;margin-top:0" data-speed="-12"><img src="img/sand-4.jpg" alt="Geometric pattern traced in sand" width="1063" height="1063" loading="lazy"><figcaption>03 / 13</figcaption></figure>
+        <figure style="grid-column:6/11;margin-top:-6vh" data-speed="-4"><img src="img/book-where.jpg" alt="Photobook spread: WHERE" width="1600" height="870" loading="lazy"><figcaption>04 / 13</figcaption></figure>
+        <figure style="grid-column:2/6;margin-top:4vh" data-speed="-16"><img src="img/sand-5.jpg" alt="Wave pattern in sand" width="1063" height="1063" loading="lazy"><figcaption>05 / 13</figcaption></figure>
+        <figure style="grid-column:7/13;margin-top:-14vh" data-speed="-8"><img src="img/book-are.jpg" alt="Photobook page: ARE" width="1146" height="1500" loading="lazy"><figcaption>06 / 13</figcaption></figure>
+        <figure style="grid-column:3/8;margin-top:6vh" data-speed="-6"><img src="img/sand-2.jpg" alt="Diagonal lines in sand" width="1063" height="1063" loading="lazy"><figcaption>07 / 13</figcaption></figure>
+        <figure style="grid-column:9/13;margin-top:-8vh" data-speed="-18"><img src="img/book-you.jpg" alt="Photobook spread: YOU" width="1460" height="1010" loading="lazy"><figcaption>08 / 13</figcaption></figure>
+        <figure style="grid-column:1/6;margin-top:4vh" data-speed="-12"><img src="img/sand-6.jpg" alt="Shells and water on sand" width="1063" height="1063" loading="lazy"><figcaption>09 / 13</figcaption></figure>
+        <figure style="grid-column:7/12;margin-top:-10vh" data-speed="-4"><img src="img/book-going.jpg" alt="Photobook spread: GOING?" width="1600" height="787" loading="lazy"><figcaption>10 / 13</figcaption></figure>
+        <figure style="grid-column:2/8;margin-top:2vh" data-speed="-16"><img src="img/sand-3.jpg" alt="Fingerprint-like traces in sand" width="1063" height="1063" loading="lazy"><figcaption>11 / 13</figcaption></figure>
+        <figure style="grid-column:9/13;margin-top:-12vh" data-speed="-8"><img src="img/book-trytocatchyou.jpg" alt="Photobook spread with die-cut text" width="1536" height="974" loading="lazy"><figcaption>12 / 13</figcaption></figure>
+        <figure style="grid-column:4/10;margin-top:6vh" data-speed="-6"><img src="img/sand-7.jpg" alt="Rippled sand surface" width="1063" height="1063" loading="lazy"><figcaption>13 / 13</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Photography &amp; photobook</dd></div><div><dt>Subject</dt><dd>Traces in sand</dd></div><div><dt>Book</dt><dd>Where are you going?</dd></div><div><dt>Year</dt><dd>[YEAR]</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/paint-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Abril Fatface',serif;color:#ffd36e">Malerei</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Malerei – paintings</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/6;margin-top:0" data-speed="-6"><img src="img/paint-bahnhof.jpg" alt="Painting of a colourful tiled building at a station corner" width="1061" height="1500" loading="lazy"><figcaption>01 / 03 — Bahnhofsromantik</figcaption></figure>
+        <figure style="grid-column:7/11;margin-top:16vh" data-speed="-18"><img src="img/paint-newyear.jpg" alt="Painting of a breakfast table from above" width="1061" height="1500" loading="lazy"><figcaption>02 / 03 — Happy New Year</figcaption></figure>
+        <figure style="grid-column:3/7;margin-top:2vh" data-speed="-12"><img src="img/paint-flair.jpg" alt="Four painted Paris street scenes" width="1061" height="1500" loading="lazy"><figcaption>03 / 03 — Flair</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Painting</dd></div><div><dt>Works</dt><dd>Bahnhofsromantik · Happy New Year · Flair</dd></div><div><dt>Format</dt><dd>A4</dd></div><div><dt>Year</dt><dd>2025</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/serie-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:Unbounded,sans-serif;font-weight:700;color:#9fd8ff">Fotoserien</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Fotoserien – photo series</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/6;margin-top:0" data-speed="-6"><img src="img/serie-spiegel.jpg" alt="Eight photographs of a tower block at different times of day" width="1061" height="1500" loading="lazy"><figcaption>01 / 04 — Spiegelshow</figcaption></figure>
+        <figure style="grid-column:7/11;margin-top:16vh" data-speed="-18"><img src="img/serie-verwandlung.jpg" alt="Collage of wooden chair details" width="1061" height="1500" loading="lazy"><figcaption>02 / 04 — Verwandlung</figcaption></figure>
+        <figure style="grid-column:3/7;margin-top:2vh" data-speed="-12"><img src="img/serie-frequenz.jpg" alt="Film strip with five frames" width="1500" height="1061" loading="lazy"><figcaption>03 / 04 — Frequenz</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:14vh" data-speed="-4"><img src="img/serie-fabio.jpg" alt="Photographs of a tattoo artist at work" width="1061" height="1500" loading="lazy"><figcaption>04 / 04 — Fabios Arbeitsplatz</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Photo series</dd></div><div><dt>Series</dt><dd>Spiegelshow · Verwandlung · Frequenz · Fabios Arbeitsplatz</dd></div><div><dt>Format</dt><dd>A4 boards</dd></div><div><dt>Year</dt><dd>2025</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/meantime-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:Caveat,cursive;font-weight:700;color:#d9c2ff">In the meantime</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">In the meantime – zine</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/meantime-1.jpg" alt="Zine page 1: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>01 / 06</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:22vh" data-speed="-18"><img src="img/meantime-2.jpg" alt="Zine page 2: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>02 / 06</figcaption></figure>
+        <figure style="grid-column:1/5;margin-top:0" data-speed="-12"><img src="img/meantime-3.jpg" alt="Zine page 3: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>03 / 06</figcaption></figure>
+        <figure style="grid-column:6/11;margin-top:-6vh" data-speed="-4"><img src="img/meantime-4.jpg" alt="Zine page 4: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>04 / 06</figcaption></figure>
+        <figure style="grid-column:2/6;margin-top:4vh" data-speed="-16"><img src="img/meantime-5.jpg" alt="Zine page 5: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>05 / 06</figcaption></figure>
+        <figure style="grid-column:7/13;margin-top:-14vh" data-speed="-8"><img src="img/meantime-6.jpg" alt="Zine page 6: collage with photographs, letters and handwriting" width="1040" height="1343" loading="lazy"><figcaption>06 / 06</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Zine / editorial</dd></div><div><dt>Pages</dt><dd>6</dd></div><div><dt>Techniques</dt><dd>Collage, photography, handwriting</dd></div><div><dt>Year</dt><dd>2026</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/web-start.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:Silkscreen,monospace;color:#9dff5c">Digitale Basics</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Digitale Basics – course website</h2>
+      <div class="gallery">
+        <figure style="grid-column:1/9;margin-top:0" data-speed="-6"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-start.jpg" alt="Website start page with pink wave graphic" width="1899" height="1057" loading="lazy"><figcaption>01 / 06</figcaption></figure>
+        <figure style="grid-column:5/13;margin-top:8vh" data-speed="-18"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-draw.jpg" alt="Website page: drawing algorithms" width="1919" height="1079" loading="lazy"><figcaption>02 / 06</figcaption></figure>
+        <figure style="grid-column:2/10;margin-top:0" data-speed="-12"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-grid.jpg" alt="Website page: grids and modules" width="1919" height="1078" loading="lazy"><figcaption>03 / 06</figcaption></figure>
+        <figure style="grid-column:4/12;margin-top:8vh" data-speed="-4"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-var.jpg" alt="Website page: variables and parameters" width="1919" height="1079" loading="lazy"><figcaption>04 / 06</figcaption></figure>
+        <figure style="grid-column:1/8;margin-top:0" data-speed="-16"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-tools.jpg" alt="Website page: building a tool" width="1919" height="1079" loading="lazy"><figcaption>05 / 06</figcaption></figure>
+        <figure style="grid-column:6/13;margin-top:-2vh" data-speed="-8"><div class="browser"><span></span><span></span><span></span></div><img src="img/web-print.jpg" alt="Website page: print publishing" width="1919" height="1076" loading="lazy"><figcaption>06 / 06</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Website</dd></div><div><dt>Course</dt><dd>Digitale Basics, 1st semester visual communication</dd></div><div><dt>Topics</dt><dd>Algorithms, grids, variables, tools, print</dd></div><div><dt>Year</dt><dd>2026</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/port-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;color:#ffb38a">Portraits</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Portraits – portraits</h2>
+      <div class="gallery">
+        <figure style="grid-column:1/10;margin-top:0" data-speed="-6"><img src="img/port-4xich.jpg" alt="Four self-portraits in different outfits, black and white" width="1800" height="909" loading="lazy"><figcaption>01 / 02 — 4x ich</figcaption></figure>
+        <figure style="grid-column:6/12;margin-top:10vh" data-speed="-18"><img src="img/port-gitarre.jpg" alt="Close-up of hands playing an acoustic guitar" width="1125" height="1500" loading="lazy"><figcaption>02 / 02 — Gitarre</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Portrait photography</dd></div><div><dt>Works</dt><dd>4x ich · Gitarre</dd></div><div><dt>Year</dt><dd>[YEAR]</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/bb-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:Anton,sans-serif;color:#ff8a3d">Basketball</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Basketball</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/bb-1.jpg" alt="Two players jumping for a basketball under a hoop" width="1200" height="1600" loading="lazy"><figcaption>01 / 02</figcaption></figure>
+        <figure style="grid-column:8/12;margin-top:22vh" data-speed="-18"><img src="img/bb-2.jpg" alt="Player reaching for the ball at the hoop" width="1200" height="1600" loading="lazy"><figcaption>02 / 02</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Sports photography</dd></div><div><dt>Location</dt><dd>[LOCATION]</dd></div><div><dt>Series</dt><dd>[N] photographs</dd></div><div><dt>Year</dt><dd>[YEAR]</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/brief-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Pinyon Script',cursive;color:#ffffff">Brief</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Brief – letter object</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/9;margin-top:0" data-speed="-6"><img src="img/brief-visage.jpg" alt="Letter object bound with lace and black ribbon, with a cut-out face" width="1500" height="1353" loading="lazy"><figcaption>01 / 02</figcaption></figure>
+        <figure style="grid-column:9/13;margin-top:16vh" data-speed="-18"><img src="img/brief-seite.jpg" alt="Side view of the letter object laced with ribbon" width="683" height="1500" loading="lazy"><figcaption>02 / 02</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Object / book art</dd></div><div><dt>Material</dt><dd>Paper, lace, ribbon</dd></div><div><dt>Year</dt><dd>[YEAR]</dd></div></dl>
+    </div>
+  </section>
+
+  <section class="project">
+    <div class="p-bg"><img src="img/shabazz-bg.jpg" alt="" data-zoom></div>
+    <div class="p-title-wrap" aria-hidden="true"><p class="p-title split" style="font-family:'Playfair Display',serif;font-style:italic;font-weight:500;color:#ffd9c4">Jamel Shabazz</p></div>
+    <div class="p-content">
+      <h2 style="position:absolute;left:-9999px">Jamel Shabazz – exhibition review</h2>
+      <div class="gallery">
+        <figure style="grid-column:2/7;margin-top:0" data-speed="-6"><img src="img/shabazz-1.jpg" alt="Review page: Exhibition New York Moves and Black Communities" width="1132" height="1600" loading="lazy"><figcaption>01 / 03</figcaption></figure>
+        <figure style="grid-column:8/13;margin-top:14vh" data-speed="-18"><img src="img/shabazz-2.jpg" alt="Review page with colour swatches" width="1132" height="1600" loading="lazy"><figcaption>02 / 03</figcaption></figure>
+        <figure style="grid-column:4/9;margin-top:2vh" data-speed="-12"><img src="img/shabazz-3.jpg" alt="Review page with drawing of a Kangol hat" width="1132" height="1600" loading="lazy"><figcaption>03 / 03</figcaption></figure>
+      </div>
+      <dl class="meta" style="margin-top:0"><div><dt>Type</dt><dd>Exhibition review</dd></div><div><dt>Exhibition</dt><dd>New York Moves and Black Communities</dd></div><div><dt>Venue</dt><dd>Museum für Photographie Braunschweig</dd></div><div><dt>Year</dt><dd>2026</dd></div></dl>
+    </div>
+  </section>
+
+  <!-- COLOPHON -->
+  <section class="colophon" id="contact">
+    <h2 class="wide"><span class="line-mask"><span class="split">Impressum</span></span></h2>
+    <p class="contact wide">Say hi — <a href="mailto:Jana.fischr2001@gmail.com">Jana.fischr2001@gmail.com</a></p>
+    <div class="profile">
+      <div><h3 class="wide">Profil</h3><p class="profile-text">Schon immer hat mir das Arbeiten mit den Händen gefallen. Seit Kindertagen ist das Malen meine größte Leidenschaft. Mein Ziel ist es, einen Beruf zu erlernen, in dem ich die Fähigkeit einbringen kann, exakte und kreative Arbeiten zu erstellen.</p></div>
+      <div><h3 class="wide">Kontakt</h3><dl>
+        <div><dt>Anschrift</dt><dd>Jana Fischer<br>Berliner Platz 2B<br>38102 Braunschweig</dd></div>
+        <div><dt>Telefon</dt><dd><a href="tel:+4915208749627">+49 1520 8749627</a></dd></div>
+        <div><dt>E-Mail</dt><dd><a href="mailto:Jana.fischr2001@gmail.com">Jana.fischr2001@gmail.com</a></dd></div>
+      </dl></div>
+      <div><h3 class="wide">Fähigkeiten</h3><ul><li>Fotografie</li><li>Grafikdesign</li><li>Typografie</li><li>Illustration</li><li>Malen</li></ul></div>
+    </div>
+    <div class="cols">
+      <div><h3 class="wide">Fonts</h3><ul><li>Archivo Expanded</li><li>Syne · Abril Fatface · Pinyon Script</li><li>Permanent Marker · Syne · Special Elite</li><li>Anton · Silkscreen · Playfair Display</li><li>Bebas Neue · Caveat · Unbounded</li><li>Bebas Neue · Caveat · Unbounded</li></ul></div>
+      <div><h3 class="wide">Website</h3><ul><li>Designed by Jan van der Vorst</li></ul></div>
+      <div><h3 class="wide">Imagery</h3><ul><li>All work by Jana Fischer</li></ul></div>
+      <div><h3 class="wide">Copyrights</h3><p>© 2026 Jana Fischer</p></div>
+    </div>
+    <div class="foot"><span>© 2026 Jana Fischer · Angaben gemäß § 5 DDG: siehe Kontakt · <a href="datenschutz.html" style="border-bottom:1px solid currentColor">Datenschutz</a></span><span>Designed by Jan van der Vorst</span><a href="#top">Back to top ↑</a></div>
+  </section>
+</main>
+
+<script src="js/gsap.min.js"></script>
+<script src="js/ScrollTrigger.min.js"></script>
+<script src="js/lenis.min.js"></script>
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- themes ---------- */
+  var THEMES = [
+    { id:'photo', label:'Photography', word:'PHOTOGRAPHY', img:0, pos:[0.45,0.45], grade:[1.0,1.12,0.82],
+      head:{ fontFamily:'Archivo, sans-serif', fontStretch:'125%', fontWeight:'700', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.01em' },
+      giant:{ fontFamily:'Archivo, sans-serif', fontStretch:'125%', fontWeight:'700', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.01em' } },
+    { id:'graphic', label:'Graphic design', word:'GRAPHIC DESIGN', img:1, pos:[0.5,0.3], grade:[0.0,1.06,0.86],
+      head:{ fontFamily:'Syne, sans-serif', fontStretch:'100%', fontWeight:'800', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.02em' },
+      giant:{ fontFamily:'Syne, sans-serif', fontStretch:'100%', fontWeight:'800', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.03em' } },
+    { id:'type', label:'Typography', word:'TYPOGRAPHY', img:2, pos:[0.55,0.4], grade:[0.15,1.04,0.8],
+      head:{ fontFamily:'"Abril Fatface", serif', fontStretch:'100%', fontWeight:'400', fontStyle:'normal', textTransform:'none', letterSpacing:'0' },
+      giant:{ fontFamily:'"Abril Fatface", serif', fontStretch:'100%', fontWeight:'400', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.01em' } },
+    { id:'illu', label:'Illustration', word:'Illustration', img:3, pos:[0.5,0.42], grade:[0.0,1.05,0.84],
+      head:{ fontFamily:'"Cormorant Garamond", serif', fontStretch:'100%', fontWeight:'400', fontStyle:'normal', textTransform:'none', letterSpacing:'-0.01em' },
+      giant:{ fontFamily:'"Pinyon Script", cursive', fontStretch:'100%', fontWeight:'400', fontStyle:'normal', textTransform:'none', letterSpacing:'0' } }
+  ];
+  var IMGS = ['img/jana-3.jpg','img/jana-2.jpg','img/jana-1.jpg','img/jana-4.jpg'];
+  var current = 0, busy = false;
+
+  /* ---------- helpers ---------- */
+  var measureCtx = document.createElement('canvas').getContext('2d');
+  function split(el, text){
+    if (text != null) el.textContent = text;
+    var t = el.textContent; el.textContent = '';
+    t.split('').forEach(function(c){
+      var s = document.createElement('span'); s.className = 'char';
+      s.textContent = c === ' ' ? ' ' : c; el.appendChild(s);
+    });
+  }
+  document.querySelectorAll('.split').forEach(function(el){ split(el); });
+  var giantEl = document.getElementById('giant');
+  split(giantEl, THEMES[0].word);
+
+  function applyStyle(els, st){ els.forEach(function(el){ for (var k in st) el.style[k] = st[k]; }); }
+  function applyTheme(t){
+    applyStyle(document.querySelectorAll('.t-head'), t.head);
+    applyStyle([document.querySelector('.t-giant')], t.giant);
+  }
+  function inkBounds(text, font, wide){
+    var c = document.createElement('canvas'), x = c.getContext('2d');
+    x.font = font; try { x.fontStretch = wide ? 'expanded' : 'normal'; } catch(e){}
+    var adv = x.measureText(text).width;
+    c.width = Math.ceil(adv + 400); c.height = 360;
+    x.font = font; try { x.fontStretch = wide ? 'expanded' : 'normal'; } catch(e){}
+    x.textBaseline = 'alphabetic'; x.fillStyle = '#000'; x.fillText(text, 200, 240);
+    var d = x.getImageData(0, 0, c.width, c.height).data, minX = c.width, maxX = -1;
+    for (var yy = 0; yy < c.height; yy++) for (var xx = 0; xx < c.width; xx++) {
+      if (d[(yy * c.width + xx) * 4 + 3] > 20) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; }
+    }
+    if (maxX < 0) return { left: 0, right: adv, adv: adv };
+    return { left: minX - 200, right: maxX - 200, adv: adv };
+  }
+  function fitGiant(){
+    var p = giantEl.parentNode;
+    p.style.fontSize = '100px';
+    var w = giantEl.getBoundingClientRect().width || 1;
+    var cs0 = getComputedStyle(p), txt = giantEl.textContent.replace(/\u00a0/g, ' ');
+    if (cs0.textTransform === 'uppercase') txt = txt.toUpperCase();
+    var ib = inkBounds(txt, cs0.fontStyle + ' ' + cs0.fontWeight + ' 100px ' + cs0.fontFamily, parseFloat(cs0.fontStretch) >= 125);
+    var overL = Math.max(0, -ib.left), overR = Math.max(0, ib.right - ib.adv);
+    w = w + overL + overR;
+    var dx100 = (overL - overR) / 2;
+    var size = Math.floor(100 * window.innerWidth * 0.97 / w);
+    size = Math.min(size, window.innerHeight * 0.62);
+    p.style.left = (dx100 * size / 100).toFixed(1) + 'px'; p.style.right = (-dx100 * size / 100).toFixed(1) + 'px';
+    document.documentElement.style.setProperty('--giant', size + 'px');
+    p.style.fontSize = '';
+    alignGiant(size);
+    layoutRule();
+  }
+  function alignGiant(size){
+    var p = giantEl.parentNode, cs = getComputedStyle(p);
+    var text = giantEl.textContent.replace(/\u00a0/g, ' ');
+    if (cs.textTransform === 'uppercase') text = text.toUpperCase();
+    measureCtx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + size + 'px ' + cs.fontFamily;
+    try { measureCtx.fontStretch = parseFloat(cs.fontStretch) >= 125 ? 'expanded' : 'normal'; } catch(e){}
+    var m = measureCtx.measureText(text);
+    var fa = m.fontBoundingBoxAscent, fd = m.fontBoundingBoxDescent;
+    if (fa == null) { fa = size * 0.9; fd = size * 0.25; }
+    var lineH = parseFloat(cs.lineHeight) || size * 0.8;
+    var baseFromTop = (lineH - (fa + fd)) / 2 + fa;
+    var baseFromBottom = lineH - baseFromTop;
+    var capH = measureCtx.measureText('H').actualBoundingBoxAscent || size * 0.72;
+    var off = -baseFromBottom;
+    document.documentElement.style.setProperty('--giant-off', off.toFixed(1) + 'px');
+    document.documentElement.style.setProperty('--giant-ink', capH.toFixed(1) + 'px');
+  }
+  function layoutRule(){
+    var hero = document.getElementById('hero').getBoundingClientRect();
+    var head = document.querySelector('.hero-head').getBoundingClientRect();
+    var likes = document.querySelector('.hero-likes').getBoundingClientRect();
+    var rule = document.querySelector('.hero-rule');
+    var top = head.bottom - hero.top + 18, bottom = likes.top - hero.top - 22;
+    rule.style.top = top + 'px'; rule.style.height = Math.max(0, bottom - top) + 'px';
+  }
+  function fontsReady(t){
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var f = function(st){ return (st.fontStyle||'') + ' ' + (st.fontWeight||'') + ' 100px ' + st.fontFamily; };
+    return Promise.all([document.fonts.load(f(t.head), t.word), document.fonts.load(f(t.giant), t.word)]).catch(function(){});
+  }
+  function renderList(){
+    var ul = document.getElementById('likes'); ul.innerHTML = '';
+    THEMES.forEach(function(t, i){
+      if (i === current) return;
+      var li = document.createElement('li'), b = document.createElement('button'), sp = document.createElement('span');
+      b.type = 'button'; sp.textContent = t.label; b.appendChild(sp);
+      b.addEventListener('click', function(){ setTheme(i); });
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  applyTheme(THEMES[0]); fitGiant(); renderList();
+
+  /* ---------- info overlay ---------- */
+  var info = document.getElementById('info'), openB = document.getElementById('infoOpen'), closeB = document.getElementById('infoClose');
+  function setInfo(o){ info.classList.toggle('open', o); info.setAttribute('aria-hidden', !o); openB.setAttribute('aria-expanded', o); if(o) closeB.focus(); else openB.focus(); }
+  openB.addEventListener('click', function(){ setInfo(true); });
+  closeB.addEventListener('click', function(){ setInfo(false); });
+  info.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', function(){ setInfo(false); }); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && info.classList.contains('open')) setInfo(false); });
+
+  /* ---------- WebGL image transition ---------- */
+  var GL = (function(){
+    var wrap = document.getElementById('heroImg');
+    var canvas = document.createElement('canvas');
+    var gl = canvas.getContext('webgl', { premultipliedAlpha:false, antialias:false });
+    if (!gl) return null;
+    var vs = 'attribute vec2 a;varying vec2 v;void main(){v=a*.5+.5;v.y=1.-v.y;gl_Position=vec4(a,0.,1.);}';
+    var fs = [
+      'precision mediump float;varying vec2 v;',
+      'uniform sampler2D t0,t1;uniform float p,ca,ia0,ia1,time;uniform vec2 pos0,pos1;uniform vec3 g0,g1;',
+      'float h(vec2 q){return fract(sin(dot(q,vec2(127.1,311.7)))*43758.5453);}',
+      'float n(vec2 q){vec2 i=floor(q),f=fract(q);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}',
+      'float fbm(vec2 q){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*n(q);q*=2.1;a*=.5;}return s;}',
+      'vec2 cover(vec2 uv,float ia,vec2 pos){vec2 s=ca>ia?vec2(1.,ia/ca):vec2(ca/ia,1.);return uv*s+(1.-s)*pos;}',
+      'vec3 grade(vec3 c,vec3 g){float l=dot(c,vec3(.299,.587,.114));c=mix(c,vec3(l),g.x);c=(c-.5)*g.y+.5;return c*g.z;}',
+      'void main(){',
+      ' float N=fbm(v*vec2(ca,1.)*2.5+time*.05);',
+      ' float edge=p*1.3-.15;',
+      ' float m=smoothstep(edge-.15,edge+.15,1.-N*.7-v.x*.3);',
+      ' m=1.-m;',
+      ' vec2 d=vec2(N-.5,N-.5)*.35;',
+      ' vec3 A=grade(texture2D(t0,cover(v+d*p,ia0,pos0)).rgb,g0);',
+      ' vec3 B=grade(texture2D(t1,cover(v-d*(1.-p),ia1,pos1)).rgb,g1);',
+      ' gl_FragColor=vec4(mix(A,B,m),1.);',
+      '}'].join('\n');
+    function sh(type, src){ var o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(o); return o; }
+    var prog;
+    try { prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog); } catch(e){ return null; }
+    gl.useProgram(prog);
+    var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    var U = {}; ['t0','t1','p','ca','ia0','ia1','time','pos0','pos1','g0','g1'].forEach(function(k){ U[k] = gl.getUniformLocation(prog, k); });
+    gl.uniform1i(U.t0, 0); gl.uniform1i(U.t1, 1);
+    var tex = [], aspect = [];
+    var state = { a:0, b:0, p:0 };
+    function load(i){
+      return new Promise(function(res){
+        var im = new Image();
+        im.onload = function(){
+          var t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+          tex[i] = t; aspect[i] = im.naturalWidth / im.naturalHeight; res();
+        };
+        im.onerror = function(){ res(); };
+        im.src = IMGS[i];
+      });
+    }
+    function resize(){
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(wrap.clientWidth * dpr); canvas.height = Math.round(wrap.clientHeight * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    function draw(){
+      if (tex[state.a] == null || tex[state.b] == null) return;
+      var ta = THEMES.filter(function(t){ return t.img === state.a; })[0], tb = THEMES.filter(function(t){ return t.img === state.b; })[0];
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[state.a]);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex[state.b]);
+      gl.uniform1f(U.p, state.p); gl.uniform1f(U.ca, canvas.width / canvas.height);
+      gl.uniform1f(U.ia0, aspect[state.a]); gl.uniform1f(U.ia1, aspect[state.b]);
+      gl.uniform1f(U.time, performance.now() / 1000);
+      gl.uniform2f(U.pos0, ta.pos[0], ta.pos[1]); gl.uniform2f(U.pos1, tb.pos[0], tb.pos[1]);
+      gl.uniform3f(U.g0, ta.grade[0], ta.grade[1], ta.grade[2]); gl.uniform3f(U.g1, tb.grade[0], tb.grade[1], tb.grade[2]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    return {
+      init: function(){
+        return Promise.all(IMGS.map(function(_, i){ return load(i); })).then(function(){
+          if (tex[0] == null) return false;
+          wrap.insertBefore(canvas, wrap.firstChild); wrap.classList.add('gl'); resize(); draw();
+          window.addEventListener('resize', function(){ resize(); draw(); });
+          return true;
+        });
+      },
+      go: function(to, dur){
+        state.a = state.b; state.b = to; state.p = 0;
+        return new Promise(function(res){
+          if (typeof gsap === 'undefined') { state.p = 1; draw(); return res(); }
+          gsap.to(state, { p: 1, duration: dur, ease: 'power2.inOut', onUpdate: draw, onComplete: function(){ state.a = to; draw(); res(); } });
+        });
+      },
+      canvas: canvas
+    };
+  })();
+  var glReady = GL ? GL.init() : Promise.resolve(false);
+
+  function swapImage(i, dur){
+    return glReady.then(function(ok){
+      if (ok) return GL.go(THEMES[i].img, dur);
+      document.querySelectorAll('#heroImg .slide').forEach(function(im, k){ im.classList.toggle('on', k === THEMES[i].img); });
+      return new Promise(function(r){ setTimeout(r, dur * 600); });
+    });
+  }
+
+  if (typeof gsap === 'undefined') { document.querySelector('.loader').remove(); document.body.classList.remove('loading'); return; }
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* ---------- smooth scroll ---------- */
+  var lenis = null;
+  if (!reduce && window.Lenis) {
+    lenis = new Lenis({ lerp: 0.09 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+    document.querySelectorAll('a[href^="#"]').forEach(function(a){
+      a.addEventListener('click', function(e){ var el = document.querySelector(a.getAttribute('href')); if(el){ e.preventDefault(); lenis.scrollTo(el, { duration: 1.6 }); } });
+    });
+  }
+
+  /* ---------- hero reveal / hide ---------- */
+  function heroParts(){
+    return {
+      head: document.querySelectorAll('.hero-head .char'),
+      likes: document.querySelectorAll('.hero-likes h2 .char'),
+      list: document.querySelectorAll('#likes span'),
+      giant: document.querySelectorAll('#giant .char')
+    };
+  }
+  function hideAll(){
+    var h = heroParts();
+    gsap.set([h.head, h.likes, h.list], { yPercent: 115 });
+    gsap.set(h.giant, { yPercent: 105 });
+    gsap.set('.hero-rule', { scaleY: 0 });
+  }
+  function reveal(){
+    var h = heroParts();
+    var tl = gsap.timeline();
+    tl.to(h.head, { yPercent: 0, duration: 0.9, ease: 'expo.out', stagger: 0.022 })
+      .to('.hero-rule', { scaleY: 1, duration: 0.9, ease: 'expo.inOut' }, '-=0.6')
+      .to(h.likes, { yPercent: 0, duration: 0.8, ease: 'expo.out', stagger: 0.04 }, '-=0.5')
+      .to(h.list, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.07 }, '-=0.5')
+      .to(h.giant, { yPercent: 0, duration: 1.1, ease: 'expo.out', stagger: 0.06 }, '-=0.6');
+    return tl;
+  }
+  function setTheme(i){
+    if (busy || i === current) return;
+    busy = true; current = i;
+    var t = THEMES[i], h = heroParts();
+    var out = gsap.timeline();
+    out.to([h.head, h.likes, h.list], { yPercent: -115, duration: 0.35, ease: 'power2.in', stagger: 0.004 }, 0)
+       .to(h.giant, { yPercent: -105, duration: 0.4, ease: 'power2.in', stagger: 0.02 }, 0)
+       .to('.hero-rule', { scaleY: 0, transformOrigin: 'bottom', duration: 0.35, ease: 'power2.in' }, 0);
+    var img = swapImage(i, 1.3);
+    Promise.all([new Promise(function(r){ out.eventCallback('onComplete', r); }), fontsReady(t)]).then(function(){
+      applyTheme(t);
+      split(giantEl, t.word);
+      fitGiant();
+      renderList();
+      gsap.set('.hero-rule', { transformOrigin: 'top' });
+      hideAll();
+      return img;
+    }).then(function(){
+      reveal().eventCallback('onComplete', function(){ busy = false; var b = document.querySelector('#likes button'); });
+    });
+  }
+
+  /* ---------- intro ---------- */
+  hideAll();
+  gsap.set('#heroImg', { scale: 1.15 });
+  var counter = { v: 0 }, countEl = document.getElementById('count');
+  var LFONTS = [
+    { f:'Archivo, sans-serif', st:'125%', w:'700', s:'normal', t:'uppercase' },
+    { f:'"Pinyon Script", cursive', st:'100%', w:'400', s:'normal', t:'none' },
+    { f:'Syne, sans-serif', st:'100%', w:'800', s:'normal', t:'uppercase' },
+    { f:'"Permanent Marker", cursive', st:'100%', w:'400', s:'normal', t:'none' },
+    { f:'"Abril Fatface", serif', st:'100%', w:'400', s:'normal', t:'none' },
+    { f:'"Special Elite", monospace', st:'100%', w:'400', s:'normal', t:'none' },
+    { f:'Silkscreen, monospace', st:'100%', w:'400', s:'normal', t:'uppercase' },
+    { f:'"Playfair Display", serif', st:'100%', w:'500', s:'italic', t:'none' },
+    { f:'Anton, sans-serif', st:'100%', w:'400', s:'normal', t:'uppercase' }
+  ];
+  var DISC = ['Photography', 'Graphic design', 'Typography', 'Illustration'];
+  var nameEl = document.getElementById('loaderName'), discEl = document.getElementById('loaderDisc'), fi = 0;
+  function flick(){
+    var L = LFONTS[fi % LFONTS.length]; fi++;
+    nameEl.style.fontFamily = L.f; nameEl.style.fontStretch = L.st; nameEl.style.fontWeight = L.w; nameEl.style.fontStyle = L.s; nameEl.style.textTransform = L.t;
+  }
+  flick();
+  var flickTimer = reduce ? null : setInterval(flick, 140);
+  if (lenis) lenis.stop();
+  var intro = gsap.timeline({ onComplete: function(){ document.body.classList.remove('loading'); if (lenis) lenis.start(); buildScroll(); } });
+  intro.to(counter, { v: 100, duration: reduce ? 0.1 : 2.4, ease: 'power2.inOut', onUpdate: function(){
+          countEl.textContent = Math.round(counter.v);
+          discEl.textContent = DISC[Math.min(DISC.length - 1, Math.floor(counter.v / 100 * DISC.length))];
+       } })
+       .to('#loaderBar', { scaleX: 1, duration: reduce ? 0.1 : 2.4, ease: 'power2.inOut' }, 0)
+       .add(function(){ if (flickTimer) clearInterval(flickTimer); var L = LFONTS[0]; nameEl.style.fontFamily = L.f; nameEl.style.fontStretch = L.st; nameEl.style.fontWeight = L.w; nameEl.style.fontStyle = L.s; nameEl.style.textTransform = L.t; discEl.textContent = 'Jana Fischer'; })
+       .to('.loader', { clipPath: 'circle(0% at 50% 50%)', duration: 1.2, ease: 'expo.inOut' }, '+=0.35')
+       .to('#heroImg', { scale: 1, duration: 2.2, ease: 'expo.out' }, '-=0.6')
+       .add(reveal(), '<0.1')
+       .set('.loader', { display: 'none' });
+  Promise.all([glReady, fontsReady(THEMES[0])]).then(function(){ fitGiant(); });
+
+  /* ---------- scroll effects ---------- */
+  function buildScroll(){
+    gsap.to('#heroImg', { yPercent: 12, ease: 'none', scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } });
+    gsap.to('.scroll-hint', { autoAlpha: 0, scrollTrigger: { trigger: '#hero', start: 'top top', end: '10% top', scrub: true } });
+
+    document.querySelectorAll('.project').forEach(function(sec){
+      var chars = sec.querySelectorAll('.p-title .char');
+      var vh = window.innerHeight, H = sec.offsetHeight;
+      var enterD = 0.8 * vh, exitD = 0.6 * vh, total = H + 0.55 * vh;
+      var hold = Math.max(1, total - enterD - exitD);
+      var tt = gsap.timeline({ scrollTrigger: { trigger: sec, start: 'top 85%', end: 'bottom 30%', scrub: 1 } });
+      tt.fromTo(chars, { yPercent: function(k){ return 60 + k * 18; }, opacity: 0 },
+                       { yPercent: 0, opacity: 1, ease: 'none', duration: enterD, stagger: enterD * 0.03 / chars.length * 10 })
+        .to({}, { duration: hold })
+        .to(chars, { yPercent: function(k){ return -40 - k * 10; }, opacity: 0, ease: 'none', duration: exitD, stagger: exitD * 0.02 / chars.length * 10 });
+      var z = sec.querySelector('[data-zoom]');
+      if (z) gsap.fromTo(z, { scale: 1.2 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: true } });
+      sec.querySelectorAll('[data-speed]').forEach(function(c){
+        var sp = parseFloat(c.getAttribute('data-speed'));
+        gsap.fromTo(c, { yPercent: 0 }, { yPercent: sp * 3, ease: 'none', scrollTrigger: { trigger: c, start: 'top bottom', end: 'bottom top', scrub: true } });
+        gsap.from(c, { clipPath: 'inset(18% 10% 18% 10%)', scale: 1.06, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: c, start: 'top 85%' } });
+      });
+      gsap.from(sec.querySelectorAll('.meta > div'), { y: 30, opacity: 0, stagger: 0.08, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: sec.querySelector('.meta'), start: 'top 90%' } });
+    });
+
+    gsap.from('.colophon .char', { yPercent: 110, stagger: 0.03, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: '.colophon', start: 'top 70%' } });
+    gsap.from('.colophon .contact, .colophon .profile > div, .colophon .cols > div', { y: 40, opacity: 0, stagger: 0.08, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.colophon', start: 'top 55%' } });
+  }
+
+  window.addEventListener('resize', function(){ fitGiant(); ScrollTrigger.refresh(); });
+})();
+</script>
+</body>
+</html>
