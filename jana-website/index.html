@@ -122,7 +122,7 @@ img{display:block;max-width:100%}
   .p-title{font-size:13vw}
   .hero-head,.hero-likes h2{font-size:9.5vw}
   .colophon h2{font-size:13vw}
-  .contact{font-size:6.5vw}.contact a{overflow-wrap:anywhere}
+  .contact{font-size:6.5vw}.contact a{display:inline-block;white-space:nowrap}
   .profile dd a{overflow-wrap:anywhere}
   .meta{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -380,7 +380,7 @@ img{display:block;max-width:100%}
       <div><h3 class="wide">Fähigkeiten</h3><ul><li>Fotografie</li><li>Grafikdesign</li><li>Typografie</li><li>Illustration</li><li>Malen</li></ul></div>
     </div>
     <div class="cols">
-      <div><h3 class="wide">Fonts</h3><ul><li>Archivo Expanded</li><li>Syne · Abril Fatface · Pinyon Script</li><li>Permanent Marker · Syne · Special Elite</li><li>Anton · Silkscreen · Playfair Display</li><li>Bebas Neue · Caveat · Unbounded</li><li>Bebas Neue · Caveat · Unbounded</li></ul></div>
+      <div><h3 class="wide">Fonts</h3><ul><li>Archivo Expanded</li><li>Syne · Abril Fatface · Pinyon Script</li><li>Permanent Marker · Syne · Special Elite</li><li>Anton · Silkscreen · Playfair Display</li><li>Bebas Neue · Caveat · Unbounded</li></ul></div>
       <div><h3 class="wide">Website</h3><ul><li>Designed by Jan van der Vorst</li></ul></div>
       <div><h3 class="wide">Imagery</h3><ul><li>All work by Jana Fischer</li></ul></div>
       <div><h3 class="wide">Copyrights</h3><p>© 2026 Jana Fischer</p></div>
@@ -453,9 +453,12 @@ img{display:block;max-width:100%}
     el.style.fontSize = '';
     var cur = parseFloat(getComputedStyle(el).fontSize);
     var w = el.scrollWidth;
-    var kids = el.querySelectorAll('.line-mask > span, .split');
+    var kids = el.querySelectorAll('.line-mask > span, .split, a');
     kids.forEach(function(k){ w = Math.max(w, k.scrollWidth); });
-    if (w > maxW) el.style.fontSize = Math.floor(cur * maxW / w) + 'px';
+    var r = document.createRange(); r.selectNodeContents(el);
+    var rects = r.getClientRects(), x0 = el.getBoundingClientRect().left;
+    for (var i = 0; i < rects.length; i++) w = Math.max(w, rects[i].right - x0);
+    if (w > maxW) el.style.fontSize = Math.floor(cur * maxW / w * 0.98) + 'px';
   }
   function fitAll(){
     var hh = document.querySelector('.hero-head'), pad = hh ? hh.getBoundingClientRect().left : 20;
@@ -733,6 +736,7 @@ img{display:block;max-width:100%}
        .add(reveal(), '<0.1')
        .set('.loader', { display: 'none' });
   Promise.all([glReady, fontsReady(THEMES[0])]).then(function(){ fitGiant(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitAll(); });
 
   /* ---------- scroll effects ---------- */
   function buildScroll(){
