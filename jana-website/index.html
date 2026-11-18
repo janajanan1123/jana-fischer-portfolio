@@ -47,7 +47,7 @@ img{display:block;max-width:100%}
 
 /* hero */
 .hero{position:relative;height:var(--svh);min-height:620px;overflow:hidden}
-.hero-img{position:absolute;inset:0;left:38%}
+.hero-img{position:absolute;inset:0;left:28%}
 .hero-img canvas,.hero-img .slide{position:absolute;inset:0;width:100%;height:100%}
 .hero-img .slide{object-fit:cover;opacity:0;transition:opacity 1s}
 .hero-img .slide.on{opacity:1}
@@ -58,7 +58,7 @@ img{display:block;max-width:100%}
 .likes-list button span{display:block}
 .giant{pointer-events:none}
 .hero-img::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,var(--bg) 0%,rgba(5,5,5,.6) 18%,rgba(5,5,5,0) 40%)}
-.hero-head{position:absolute;left:var(--pad);top:16vh;z-index:3;font-size:clamp(36px,5.6vw,82px);line-height:.86}
+.hero-head{position:absolute;left:var(--pad);top:16vh;z-index:3;font-size:calc(clamp(40px,6.9vw,100px) * var(--head-scale,1));line-height:.86}
 .hero-rule{position:absolute;left:var(--pad);top:calc(16vh + clamp(40px,6.9vw,100px)*1.9);height:34vh;width:1px;background:var(--fg);transform-origin:top;z-index:3}
 .hero-likes{position:absolute;left:var(--pad);bottom:calc(var(--giant-ink,30vh) + 3.5vh);z-index:3;display:flex;align-items:flex-end;gap:16px}
 .hero-likes h2{font-size:clamp(40px,6.9vw,100px);line-height:.86;font-weight:700}
@@ -398,7 +398,7 @@ img{display:block;max-width:100%}
 
   /* ---------- themes ---------- */
   var THEMES = [
-    { id:'photo', label:'Photography', word:'PHOTOGRAPHY', img:0, pos:[0.45,0.45], grade:[1.0,1.12,0.82],
+    { id:'photo', label:'Photography', word:'PHOTOGRAPHY', img:0, pos:[0.45,0.45], shift:0.1, headScale:0.84, grade:[1.0,1.12,0.82],
       head:{ fontFamily:'Archivo, sans-serif', fontStretch:'125%', fontWeight:'700', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.01em' },
       giant:{ fontFamily:'Archivo, sans-serif', fontStretch:'125%', fontWeight:'700', fontStyle:'normal', textTransform:'uppercase', letterSpacing:'-0.01em' } },
     { id:'graphic', label:'Graphic design', word:'GRAPHIC DESIGN', img:1, pos:[0.5,0.3], grade:[0.0,1.06,0.86],
@@ -430,6 +430,7 @@ img{display:block;max-width:100%}
 
   function applyStyle(els, st){ els.forEach(function(el){ for (var k in st) el.style[k] = st[k]; }); }
   function applyTheme(t){
+    document.querySelector('.hero-head').style.setProperty('--head-scale', window.innerWidth > 760 ? (t.headScale || 1) : 1);
     applyStyle(document.querySelectorAll('.t-head'), t.head);
     applyStyle([document.querySelector('.t-giant')], t.giant);
   }
@@ -541,7 +542,7 @@ img{display:block;max-width:100%}
     var vs = 'attribute vec2 a;varying vec2 v;void main(){v=a*.5+.5;v.y=1.-v.y;gl_Position=vec4(a,0.,1.);}';
     var fs = [
       'precision mediump float;varying vec2 v;',
-      'uniform sampler2D t0,t1;uniform float p,ca,ia0,ia1,time;uniform vec2 pos0,pos1;uniform vec3 g0,g1;',
+      'uniform sampler2D t0,t1;uniform float p,ca,ia0,ia1,time,sh0,sh1;uniform vec2 pos0,pos1;uniform vec3 g0,g1;',
       'float h(vec2 q){return fract(sin(dot(q,vec2(127.1,311.7)))*43758.5453);}',
       'float n(vec2 q){vec2 i=floor(q),f=fract(q);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}',
       'float fbm(vec2 q){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*n(q);q*=2.1;a*=.5;}return s;}',
@@ -553,8 +554,9 @@ img{display:block;max-width:100%}
       ' float m=smoothstep(edge-.15,edge+.15,1.-N*.7-v.x*.3);',
       ' m=1.-m;',
       ' vec2 d=vec2(N-.5,N-.5)*.35;',
-      ' vec3 A=grade(texture2D(t0,cover(v+d*p,ia0,pos0)).rgb,g0);',
-      ' vec3 B=grade(texture2D(t1,cover(v-d*(1.-p),ia1,pos1)).rgb,g1);',
+      ' vec2 qa=v+d*p; qa.x-=sh0; vec2 qb=v-d*(1.-p); qb.x-=sh1;',
+      ' vec3 A=qa.x<0.?vec3(.02):grade(texture2D(t0,cover(qa,ia0,pos0)).rgb,g0);',
+      ' vec3 B=qb.x<0.?vec3(.02):grade(texture2D(t1,cover(qb,ia1,pos1)).rgb,g1);',
       ' gl_FragColor=vec4(mix(A,B,m),1.);',
       '}'].join('\n');
     function sh(type, src){ var o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(o); return o; }
@@ -564,7 +566,7 @@ img{display:block;max-width:100%}
     var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
     var loc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    var U = {}; ['t0','t1','p','ca','ia0','ia1','time','pos0','pos1','g0','g1'].forEach(function(k){ U[k] = gl.getUniformLocation(prog, k); });
+    var U = {}; ['t0','t1','p','ca','ia0','ia1','time','sh0','sh1','pos0','pos1','g0','g1'].forEach(function(k){ U[k] = gl.getUniformLocation(prog, k); });
     gl.uniform1i(U.t0, 0); gl.uniform1i(U.t1, 1);
     var tex = [], aspect = [];
     var state = { a:0, b:0, p:0 };
@@ -598,6 +600,7 @@ img{display:block;max-width:100%}
       gl.uniform1f(U.ia0, aspect[state.a]); gl.uniform1f(U.ia1, aspect[state.b]);
       gl.uniform1f(U.time, performance.now() / 1000);
       gl.uniform2f(U.pos0, ta.pos[0], ta.pos[1]); gl.uniform2f(U.pos1, tb.pos[0], tb.pos[1]);
+      var mob = window.innerWidth <= 760; gl.uniform1f(U.sh0, mob ? 0 : (ta.shift || 0)); gl.uniform1f(U.sh1, mob ? 0 : (tb.shift || 0));
       gl.uniform3f(U.g0, ta.grade[0], ta.grade[1], ta.grade[2]); gl.uniform3f(U.g1, tb.grade[0], tb.grade[1], tb.grade[2]);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
