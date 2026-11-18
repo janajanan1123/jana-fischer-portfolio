@@ -555,8 +555,9 @@ img{display:block;max-width:100%}
       ' m=1.-m;',
       ' vec2 d=vec2(N-.5,N-.5)*.35;',
       ' vec2 qa=v+d*p; qa.x-=sh0; vec2 qb=v-d*(1.-p); qb.x-=sh1;',
-      ' vec3 A=qa.x<0.?vec3(.02):grade(texture2D(t0,cover(qa,ia0,pos0)).rgb,g0);',
-      ' vec3 B=qb.x<0.?vec3(.02):grade(texture2D(t1,cover(qb,ia1,pos1)).rgb,g1);',
+      ' float fa=sh0>0.?smoothstep(0.,.22,qa.x):1.; float fb=sh1>0.?smoothstep(0.,.22,qb.x):1.;',
+      ' vec3 A=mix(vec3(.02),grade(texture2D(t0,cover(max(qa,0.),ia0,pos0)).rgb,g0),fa);',
+      ' vec3 B=mix(vec3(.02),grade(texture2D(t1,cover(max(qb,0.),ia1,pos1)).rgb,g1),fb);',
       ' gl_FragColor=vec4(mix(A,B,m),1.);',
       '}'].join('\n');
     function sh(type, src){ var o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(o); return o; }
